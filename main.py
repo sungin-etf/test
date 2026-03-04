@@ -102,4 +102,4 @@ ETF명: {fund_name}
 
 
 if __name__ == "__main__":
-    check_new_etf()
+    send_telegram("ETF Monitor 연결 테스트")
