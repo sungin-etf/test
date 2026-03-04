@@ -53,7 +53,7 @@ def send_telegram(message):
         print("Telegram 전송 중 예외 발생:", e)
 
 # -------------------------------
-# DART 신규 ETF 감지
+# DART 신규 ETF 감지 및 알림
 # -------------------------------
 def check_new_etf():
     today = datetime.today()
@@ -77,6 +77,7 @@ def check_new_etf():
         return
 
     existing_etf = load_existing_etf()
+    new_count = 0
 
     for item in data.get("list", []):
         report_nm = item.get("report_nm", "")
@@ -86,13 +87,20 @@ def check_new_etf():
             match = re.search(r'\(([^()]*)\)\s*$', report_nm)
             if match:
                 fund_name = match.group(1).strip()
+
+                # DB에 없는 경우만 발송 + 추가
                 if fund_name not in existing_etf:
                     message = f"📌 신규 ETF 감지\n접수일: {rcept_dt}\nETF명: {fund_name}"
                     send_telegram(message)
                     append_new_etf(fund_name)
+                    existing_etf.add(fund_name)  # 반복 처리 안전하게
+                    new_count += 1
                     print("NEW ETF:", fund_name)
                 else:
                     print("Already exists:", fund_name)
+
+    if new_count == 0:
+        print("신규 ETF 없음")
 
 # -------------------------------
 # 메인 실행
