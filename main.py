@@ -1,0 +1,1 @@
+print("ETF monitor running")
