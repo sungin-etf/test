@@ -2,12 +2,17 @@ name: ETF Monitor
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # 매일 한국시간 09:00
+    - cron: '0 0 * * *'   # 매일 한국시간 09:00 (UTC 00:00)
   workflow_dispatch:
 
 jobs:
   run-script:
     runs-on: ubuntu-latest
+
+    env:
+      DART_API_KEY: ${{ secrets.DART_API_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
     steps:
       - uses: actions/checkout@v3
@@ -16,4 +21,17 @@ jobs:
         with:
           python-version: 3.11
 
-      - run: python main.py
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run script
+        run: python main.py
+
+      # 🔥 DB 파일 GitHub에 저장 (이게 핵심)
+      - name: Commit ETF DB
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add etf_db.csv
+          git commit -m "Update ETF DB" || echo "No changes"
+          git push
