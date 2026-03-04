@@ -87,6 +87,9 @@ def check_new_etf():
             match = re.search(r'\(([^()]*)\)\s*$', report_nm)
             if match:
                 fund_name = match.group(1).strip()
+            else:
+                # 괄호 없으면 report_nm 마지막 단어 사용
+                fund_name = report_nm.split()[-1].strip()
 
                 # DB에 없는 경우만 발송 + 추가
                 if fund_name not in existing_etf:
