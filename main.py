@@ -57,7 +57,7 @@ def send_telegram(message):
 # -------------------------------
 def check_new_etf():
     today = datetime.today()
-    start_date = today - timedelta(days=7)
+    start_date = today - timedelta(days=1)
 
     params = {
         "crtfc_key": API_KEY,
