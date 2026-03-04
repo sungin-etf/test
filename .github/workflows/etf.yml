@@ -3,7 +3,7 @@ name: DART ETF 알림
 # 매일 오전 9시에 실행
 on:
   schedule:
-    - cron: "55 13 * * *"  # UTC 기준, 한국 시간 09:00 -> UTC 0:00
+    - cron: "0 14 * * *"  # UTC 기준, 한국 시간 09:00 -> UTC 0:00
   workflow_dispatch:  # 수동 실행 가능
 
 jobs:
