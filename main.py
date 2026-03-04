@@ -18,28 +18,25 @@ def load_existing_etf():
     with open(DB_FILE, newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            key = f"{row['rcept_dt']}_{row['fund_name']}"
-            existing.add(key)
+            existing.add(row['fund_name'].strip())
 
     return existing
 
 
 # 새 ETF DB 저장
-def append_new_etf(rcept_dt, fund_name):
+def append_new_etf(fund_name):
     file_exists = os.path.exists(DB_FILE)
 
     with open(DB_FILE, 'a', newline='', encoding='utf-8') as f:
-        fieldnames = ['rcept_dt', 'fund_name']
+        fieldnames = ['fund_name']
         writer = csv.DictWriter(f, fieldnames=fieldnames)
 
         if not file_exists:
             writer.writeheader()
 
         writer.writerow({
-            'rcept_dt': rcept_dt,
             'fund_name': fund_name
         })
-
 
 # 텔레그램 발송
 def send_telegram(message):
@@ -72,34 +69,31 @@ def check_new_etf():
     res = requests.get(URL, params=params)
     data = res.json()
 
-    existing_etf = load_existing_etf()
+existing_etf = load_existing_etf()
 
-    for item in data.get("list", []):
-        report_nm = item.get("report_nm", "")
-        rcept_dt = item.get("rcept_dt", "")
+for item in data.get("list", []):
+    report_nm = item.get("report_nm", "")
+    rcept_dt = item.get("rcept_dt", "")
 
-        if "상장지수" in report_nm:
+    if "상장지수" in report_nm:
 
-            match = re.search(r'\(([^()]*)\)\s*$', report_nm)
-            if match:
-                fund_name = match.group(1)
-                unique_key = f"{rcept_dt}_{fund_name}"
+        match = re.search(r'\(([^()]*)\)\s*$', report_nm)
+        if match:
+            fund_name = match.group(1).strip()
 
-                if unique_key not in existing_etf:
-                    # 🔔 알림 발송
-                    message = f"""
+            if fund_name not in existing_etf:
+
+                message = f"""
+📌 신규 ETF 감지
 접수일: {rcept_dt}
 ETF명: {fund_name}
 """
-                    send_telegram(message)
+                send_telegram(message)
 
-                    # 📂 DB에 추가 저장
-                    append_new_etf(rcept_dt, fund_name)
-
-                    print("NEW ETF:", fund_name)
-                else:
-                    print("Already exists:", fund_name)
-
+                append_new_etf(fund_name)
+                print("NEW ETF:", fund_name)
+            else:
+                print("Already exists:", fund_name)
 
 if __name__ == "__main__":
     check_new_etf()
