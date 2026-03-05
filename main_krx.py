@@ -69,7 +69,7 @@ def check_new_etf_krx():
     etf_list = collect_etf_krx()
     for fund_name in etf_list:
         if fund_name not in existing:
-            send_telegram(f"[표준코드 발급] fund_name)
+            send_telegram(f"[표준코드 발급] {fund_name}")
             append_new_etf_krx(fund_name)
             existing.add(fund_name)
             print("NEW:", fund_name)
