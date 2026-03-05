@@ -1,7 +1,7 @@
 import requests
-import re
 import os
 import csv
+import time
 from datetime import datetime, timedelta
 
 API_KEY = os.getenv("DART_API_KEY")
@@ -16,18 +16,8 @@ def load_existing_etf():
     with open(DB_FILE, newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            existing.add(normalize_name(row['fund_name']))
+            existing.add(row['fund_name'])
     return existing
-
-# 이름 정규화
-def normalize_name(name):
-    name = re.sub(r'\{.*?\}', '', name)
-    name = re.sub(r'\([^)]*\)', '', name)
-    name = name.strip()
-    keyword = "증권상장지수투자신탁"
-    if keyword in name:
-        name = name[:name.index(keyword) + len(keyword)]
-    return name.strip()
 
 # 신규 ETF DB 저장
 def append_new_etf(fund_name):
@@ -41,6 +31,7 @@ def append_new_etf(fund_name):
             'fund_name': fund_name
         })
 
+
 # 텔레그램 전송
 def send_telegram(message):
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -53,44 +44,63 @@ def send_telegram(message):
     requests.post(url, data=payload)
 
 
+# ETF 이름 추출 (괄호 문제 해결)
+def extract_etf_name(report_nm):
+    key = "증권상장지수투자신탁"
+    if key not in report_nm:
+        return None
+    idx = report_nm.index(key)
+    return report_nm[: idx + len(key)].strip()
+
+
 # ETF 공시 감지
 def check_new_etf():
-    today = datetime.now()
-    start_date = today - timedelta(days=5)
-    params = {
-        "crtfc_key": API_KEY,
-        "pblntf_ty": "G",
-        "bgn_de": start_date.strftime("%Y%m%d"),
-        "end_de": today.strftime("%Y%m%d"),
-        "page_no": 1,
-        "page_count": 200
-    }
-    res = requests.get(URL, params=params)
-    data = res.json()
+    today = datetime.utcnow()
+    start_date = today - timedelta(days=1)
     existing_etf = load_existing_etf()
-    
-    for item in data.get("list", []):
-        report_nm = item.get("report_nm", "")
-        rcept_dt = item.get("rcept_dt", "")
-        if "상장지수" not in report_nm:
-            continue
-        # 펀드명 추출
-        match = re.search(r'\(([^()]*)\)\s*$', report_nm)
-        if not match:
-            continue
-        fund_name = match.group(1)
-        fund_name = normalize_name(fund_name)
-
-        if fund_name not in existing_etf:
-            date_format = datetime.strptime(rcept_dt, "%Y%m%d").strftime("%Y.%m.%d")
-            message = f"{date_format} 접수\n{fund_name}"
-            send_telegram(message)
-            append_new_etf(fund_name)
-            existing_etf.add(fund_name)
-            print("NEW ETF:", fund_name)
-
-        else:
-            print("Already exists:", fund_name)
+    page_no = 1
+    while True:
+        params = {
+            "crtfc_key": API_KEY,
+            "pblntf_ty": "G",
+            "bgn_de": start_date.strftime("%Y%m%d"),
+            "end_de": today.strftime("%Y%m%d"),
+            "page_no": page_no,
+            "page_count": 100
+        }
+        res = requests.get(URL, params=params)
+        data = res.json()
+        if data.get("status") != "000":
+            print("API error")
+            break
+        reports = data.get("list", [])
+        if not reports:
+            break
+        for item in reports:
+            report_nm = item.get("report_nm", "")
+            rcept_dt = item.get("rcept_dt", "")
+            if "상장지수" not in report_nm:
+                continue
+            fund_name = extract_etf_name(report_nm)
+            if not fund_name:
+                continue
+            if fund_name not in existing_etf:
+                date_format = datetime.strptime(
+                    rcept_dt, "%Y%m%d"
+                ).strftime("%Y.%m.%d")
+                message = f"{date_format} 접수\n{fund_name}"
+                send_telegram(message)
+                append_new_etf(fund_name)
+                existing_etf.add(fund_name)
+                print("NEW ETF:", fund_name)
+            else:
+                print("Already exists:", fund_name)
+        total_page = int(data.get("total_page", 1))
+        
+        if page_no >= total_page:
+            break
+        page_no += 1
+        time.sleep(0.2)
 
 # 실행
 if __name__ == "__main__":
