@@ -1,5 +1,8 @@
 name: DART ETF 알림
 
+permissions:
+  contents: write
+  
 on:
   schedule:
     - cron: "*/30 * * * *"
