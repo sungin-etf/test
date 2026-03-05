@@ -93,11 +93,7 @@ def collect_etf_krx():
             if len(cols) > 1:
 
                 name = cols[1].text.strip()
-
-                # 운용사 제거
-                fund_name = name.split(maxsplit=1)[1]
-
-                etf_list.append(fund_name)
+                etf_list.append(name)
 
     return etf_list
 
