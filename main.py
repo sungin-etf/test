@@ -50,11 +50,13 @@ def extract_etf_name(report_nm):
     keyword = "증권상장지수투자신탁"
     if keyword not in report_nm:
         return None
-    end = report_nm.index(keyword) + len(keyword)
-    start = report_nm.rfind("(", 0, end)
-    if start == -1:
+    marker = ")("
+    pos = report_nm.find(marker)
+    if pos == -1:
         return None
-    name = report_nm[start+1:end]
+    start = pos + 2
+    end = report_nm.find(keyword) + len(keyword)
+    name = report_nm[start:end]
     return name.strip()
     
 # ETF 공시 감지
