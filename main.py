@@ -85,16 +85,16 @@ def check_new_etf():
         for item in reports:
             report_nm = item.get("report_nm", "")
             rcept_dt = item.get("rcept_dt", "")
+            rcept_no = item.get("rcept_no", "")
+
             if "상장지수" not in report_nm:
                 continue
             fund_name = extract_etf_name(report_nm)
             if not fund_name:
                 continue
             if fund_name not in existing_etf:
-                date_format = datetime.strptime(
-                    rcept_dt, "%Y%m%d"
-                ).strftime("%Y.%m.%d")
-                message = f"{date_format} 접수\n{fund_name}"
+                link = f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}"
+                message = f"[DART공시]{fund_name}\n{link}"
                 send_telegram(message)
                 append_new_etf(fund_name)
                 existing_etf.add(fund_name)
