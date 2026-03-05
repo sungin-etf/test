@@ -47,11 +47,11 @@ def send_telegram(message):
 
 # ETF 이름 추출 (괄호 문제 해결)
 def extract_etf_name(report_nm):
-    match = re.search(r'\(([^()]*)\)\s*$', report_nm)
-    if not match:
+    if "증권상장지수투자신탁" not in report_nm:
         return None
-    name = match.group(1)
-    name = re.sub(r'\(.*?\)', '', name)
+    start = report_nm.find("(") + 1
+    end = report_nm.find("증권상장지수투자신탁") + len("증권상장지수투자신탁")
+    name = report_nm[start:end]
     return name.strip()
 
 # ETF 공시 감지
