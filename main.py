@@ -51,10 +51,8 @@ def extract_etf_name(report_nm):
     if not match:
         return None
     name = match.group(1)
-    if key not in name:
-        return None
-    idx = name.index(key)
-    return name[: idx + len(key)].strip()
+    name = re.sub(r'\(.*?\)', '', name)
+    return name.strip()
 
 # ETF 공시 감지
 def check_new_etf():
