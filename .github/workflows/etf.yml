@@ -1,39 +1,41 @@
 name: DART ETF 알림
 
-# 매일 오전 9시에 실행
 on:
   schedule:
-    - cron: "*/1 * * * *"  # UTC 기준, 한국 시간 09:00 -> UTC 0:00
-  workflow_dispatch:  # 수동 실행 가능
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
 
 jobs:
   notify-etf:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ 리포지토리 코드 체크아웃
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Python 세팅
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      # 3️⃣ 의존 라이브러리 설치
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install requests
 
-      # 4️⃣ 환경 변수 설정
       - name: Set environment variables
         run: |
           echo "DART_API_KEY=${{ secrets.DART_API_KEY }}" >> $GITHUB_ENV
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> $GITHUB_ENV
           echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> $GITHUB_ENV
 
-      # 5️⃣ main.py 실행
       - name: Run main.py
         run: python main.py
+
+      - name: Commit DB update
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add etf_db.csv
+          git commit -m "update etf db" || echo "no changes"
+          git push
