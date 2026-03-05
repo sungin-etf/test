@@ -9,33 +9,65 @@ URL = "https://opendart.fss.or.kr/api/list.json"
 DB_FILE = "etf_db.csv"
 
 
+# -------------------------
+# 문자열 정규화 (괄호 문제 해결)
+# -------------------------
+def normalize_name(name):
+
+    name = name.replace("{", "(").replace("}", ")")
+    name = name.replace("[", "(").replace("]", ")")
+
+    name = re.sub(r"\s+", " ", name)
+    name = name.strip()
+
+    return name
+
+
+# -------------------------
+# 기존 ETF DB 로드
+# -------------------------
 def load_existing_etf():
+
     if not os.path.exists(DB_FILE):
         return set()
 
     existing = set()
+
     with open(DB_FILE, newline='', encoding='utf-8') as f:
+
         reader = csv.DictReader(f)
+
         for row in reader:
-            existing.add(row['fund_name'].strip())
+            existing.add(normalize_name(row['fund_name']))
 
     return existing
 
 
+# -------------------------
+# 신규 ETF DB 저장
+# -------------------------
 def append_new_etf(fund_name):
+
     file_exists = os.path.exists(DB_FILE)
 
     with open(DB_FILE, 'a', newline='', encoding='utf-8') as f:
+
         fieldnames = ['fund_name']
         writer = csv.DictWriter(f, fieldnames=fieldnames)
 
         if not file_exists:
             writer.writeheader()
 
-        writer.writerow({'fund_name': fund_name})
+        writer.writerow({
+            'fund_name': fund_name
+        })
 
 
+# -------------------------
+# 텔레그램 전송
+# -------------------------
 def send_telegram(message):
+
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
@@ -49,9 +81,12 @@ def send_telegram(message):
     requests.post(url, data=payload)
 
 
+# -------------------------
+# ETF 공시 감지
+# -------------------------
 def check_new_etf():
 
-    today = datetime.today()
+    today = datetime.utcnow()
     start_date = today - timedelta(days=1)
 
     params = {
@@ -67,7 +102,6 @@ def check_new_etf():
     data = res.json()
 
     existing_etf = load_existing_etf()
-    new_count = 0
 
     for item in data.get("list", []):
 
@@ -77,35 +111,36 @@ def check_new_etf():
         if "상장지수" not in report_nm:
             continue
 
+        # 펀드명 추출
         match = re.search(r'\(([^()]*)\)\s*$', report_nm)
 
         if not match:
             continue
 
-        fund_name = match.group(1).strip()
+        fund_name = match.group(1)
+
+        fund_name = normalize_name(fund_name)
 
         if fund_name not in existing_etf:
 
-            message = f"""📌 신규 ETF 감지
-접수일: {rcept_dt}
-ETF명: {fund_name}
-"""
+            date_format = datetime.strptime(rcept_dt, "%Y%m%d").strftime("%Y.%m.%d")
+
+            message = f"{date_format} 접수\n{fund_name}"
 
             send_telegram(message)
 
             append_new_etf(fund_name)
-            existing_etf.add(fund_name)
 
-            new_count += 1
+            existing_etf.add(fund_name)
 
             print("NEW ETF:", fund_name)
 
         else:
             print("Already exists:", fund_name)
 
-    if new_count == 0:
-        print("신규 ETF 없음")
 
-
+# -------------------------
+# 실행
+# -------------------------
 if __name__ == "__main__":
     check_new_etf()
