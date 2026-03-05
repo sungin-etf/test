@@ -2,6 +2,7 @@ import requests
 import os
 import csv
 import time
+import re
 from datetime import datetime, timedelta
 
 API_KEY = os.getenv("DART_API_KEY")
