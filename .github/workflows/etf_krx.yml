@@ -2,7 +2,7 @@ name: KRX ETF Monitor
 
 on:
   schedule:
-    - cron: "*/30 0 * * *"   # 한국 09:00
+    - cron: "*/30 * * * *"   # 한국 09:00
   workflow_dispatch:
 
 jobs:
