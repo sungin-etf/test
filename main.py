@@ -56,7 +56,7 @@ def send_telegram(message):
 # ETF 공시 감지
 def check_new_etf():
     today = datetime.now()
-    start_date = today - timedelta(days=1)
+    start_date = today - timedelta(days=5)
     params = {
         "crtfc_key": API_KEY,
         "pblntf_ty": "G",
