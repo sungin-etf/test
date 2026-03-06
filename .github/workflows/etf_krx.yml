@@ -2,7 +2,7 @@ name: KRX ETF Monitor
 
 on:
   schedule:
-    - cron: "0,30 23,0-10 * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 jobs:
