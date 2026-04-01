@@ -1,4 +1,4 @@
-name: KRX ETF Monitor
+name: KRX ETF Monitor V2
 
 on:
   schedule:
